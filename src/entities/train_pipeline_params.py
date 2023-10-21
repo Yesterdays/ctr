@@ -51,3 +51,4 @@ if __name__ == "__main__":
     params = read_training_pipeline_params(PATH)
 
     logger.debug(f"params: {params} ")
+    print(params.splitting_params.val_size)
