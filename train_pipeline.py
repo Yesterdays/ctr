@@ -84,7 +84,7 @@ def train_pipeline(config_path: str):
 
     if training_pipeline_params.use_mlflow:
         model, metrics = log_experiment_mlflow(
-            run_name="ctr_run_50k_150estim",
+            run_name="first_experimentls",
             train_features=train_features,
             train_target=train_target,
             val_features=val_features,
