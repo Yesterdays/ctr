@@ -1,0 +1,11 @@
+input_data_path: "data/raw/sampled_train_50k.csv"
+input_preprocessed_data_path: "data/raw/sampled_preprocessed_train_50k.csv"
+output_model_path: "models/catclf.pkl"
+metric_path: "models/metrics.json"
+train_params:
+  model_type: "CatBoost"
+  random_state: 42
+  n_estimators: 50
+  learning_rate: 0.05
+  depth: 5
+  bagging_temperature: 0.2

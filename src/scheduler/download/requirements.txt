@@ -1,0 +1,7 @@
+click
+pandas==1.1.5
+numpy==1.19.5
+boto3==1.28.17
+marshmallow-dataclass==8.5.8
+marshmallow==3.17.0
+python-dotenv>=0.5.1
