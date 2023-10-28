@@ -1,0 +1,111 @@
+version: '3.7'
+# ====================================== AIRFLOW ENVIRONMENT VARIABLES =======================================
+x-environment: &airflow_environment
+  - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+  - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
+  - AIRFLOW__CORE__LOAD_EXAMPLES=True
+  - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://airflow:airflow@postgres:5432/airflow
+  - AIRFLOW__CORE__STORE_DAG_CODE=True
+  - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+  - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+  # custom vars
+  - DATA_VOLUME_PATH=/Users/evgeniimunin/Documents/09_pymagic_course_mlprod/repos/ctr_project_airflow/
+
+x-airflow-image: &airflow_image apache/airflow:2.3.0-python3.8
+# ====================================== /AIRFLOW ENVIRONMENT VARIABLES ======================================
+services:
+  postgres: # OK
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    ports:
+      - "5432:5432"
+
+  init: # OK
+    build:
+      context: src/scheduler/airflow-docker
+      args:
+        AIRFLOW_BASE_IMAGE: *airflow_image
+    image: airflow-docker
+    depends_on:
+      - postgres
+    environment: *airflow_environment
+    entrypoint: /bin/bash
+    command: -c 'airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.org && airflow connections add fs_default --conn-type fs'
+
+  webserver: # OK
+    build:
+      context: src/scheduler/airflow-docker
+      args:
+        AIRFLOW_BASE_IMAGE: *airflow_image
+    image: airflow-docker
+
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - logs:/opt/airflow/logs
+    environment: *airflow_environment
+    command: webserver
+
+  scheduler: # OK
+    build:
+      context: src/scheduler/airflow-docker
+      args:
+        AIRFLOW_BASE_IMAGE: *airflow_image
+    image: airflow-docker
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - logs:/opt/airflow/logs
+      - ./dags/:/opt/airflow/dags/
+      - ./data/:/opt/airflow/data/
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment: *airflow_environment
+    command: scheduler
+
+  ml_base:
+    build:
+      context: src/scheduler/ml-base
+    image: ml-base
+    restart: "no"
+
+  download:
+    build:
+      context: src/scheduler/download
+    image: download
+    depends_on:
+      - ml_base
+    restart: "no"
+
+  preprocess:
+    build:
+      context: src/scheduler/preprocess
+    image: preprocess
+    depends_on:
+      - ml_base
+    restart: "no"
+
+  split:
+    build:
+      context: src/scheduler/split
+    image: split
+    depends_on:
+      - ml_base
+    restart: "no"
+
+  train:
+    build:
+      context: src/scheduler/train
+    image: train
+    depends_on:
+      - ml_base
+    restart: "no"
+
+volumes:
+  logs:
